@@ -51,8 +51,11 @@ unsigned char ucKey1, ucKey2;
   * @param  无
   * @retval 无
   */
+ static volatile uint16_t counter=0;
 int main(void)
 {
+    unsigned char temp;
+    unsigned int real, img;
     //int i;
     //unsigned char state;
     //unsigned int real,img;
@@ -62,7 +65,7 @@ int main(void)
     /* 配置SysTick 为1ms中断一次 */
     init_key();
     LED_GPIO_Config();
-    SysTick_Init();
+//    SysTick_Init();
 
 
     //printf("\r\n 这是一个I2C外设(AT24C02)读写测试例程 \r\n");
@@ -76,10 +79,41 @@ int main(void)
     //I2C_Test();
 
     ucState = STATE_IDLE;
-    Delay_us(5);//enable systick
+//    Delay_us(5);//enable systick
 
     //SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
     //SysTick->CTRL |=  SysTick_CTRL_TICKINT_Msk;
+
+
+
+
+    SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;//关闭中断
+        
+    Init_AD5933();
+//    Delay_us(5);//enable systick
+    AD5933_Set_Mode_Freq_Start();
+
+    while((AD5933_Get_DFT_ST() & 0x04) != 0x04)
+    {
+        while(1)//wait for DFT finish
+        {
+            temp = AD5933_Get_DFT_ST();
+            if( temp & 0x02)//实部和虚部有效
+                break;
+        }
+        real = AD5933_Get_Real();
+        img  = AD5933_Get_Img();
+         AD5933_Set_Mode_Freq_UP();   
+        printf("$%04X%04X#", real, img);
+    }
+
+
+
+
+
+
+
+
 
     while (1)
     {
@@ -114,7 +148,7 @@ void State_Init_pro(void)
         ucKey2 = KEY_NG;
     }
 }
-
+static volatile uint32_t count = 0;
 void State_AD_ing_pro(void)
 {
     unsigned char temp;
@@ -125,25 +159,33 @@ void State_AD_ing_pro(void)
     SysTick->CTRL |=  SysTick_CTRL_TICKINT_Msk;//使能中断
     while( ucState == STATE_AD_ING )
     {
-        SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;//关闭中断,消除对I2C的影响！！
-        while(1)//wait for DFT finish
+        count ++;
+        if(count < 100)
         {
-            temp = AD5933_Get_DFT_ST();
-            if( temp & 0x02)//实部和虚部有效
-                break;
+            SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;//关闭中断,消除对I2C的影响！！
+            while(1)//wait for DFT finish
+            {
+                temp = AD5933_Get_DFT_ST();
+                if( temp & 0x02)//实部和虚部有效
+                    break;
+            }
+            real = AD5933_Get_Real();
+            img  = AD5933_Get_Img();
+            AD5933_Set_Mode_Freq_UP();
+            //        AD5933_Set_Mode_Freq_Repeat();
+
+            SysTick->CTRL |=  SysTick_CTRL_TICKINT_Msk;//使能中断
+
+            //printf("%c", '$');
+            //printf("%04X", real);
+            //printf("%04X", img);
+            //printf("%c", '#');
+            printf("$%04X%04X#", real, img);
+            Delay_us(50);//5ms
         }
-        real = AD5933_Get_Real();
-        img  = AD5933_Get_Img();
-        AD5933_Set_Mode_Freq_Repeat();
 
-        SysTick->CTRL |=  SysTick_CTRL_TICKINT_Msk;//使能中断
 
-        //printf("%c", '$');
-        //printf("%04X", real);
-        //printf("%04X", img);
-        //printf("%c", '#');
-        printf("$%04X%04X#", real, img);
-        Delay_us(5);//5ms
+
         //judege the state
         if( ucKey2 == KEY_OK )
         {

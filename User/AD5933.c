@@ -7,9 +7,9 @@ void Init_AD5933(void)
 {
     int i, j, k;
     //---this paramter is very important, it decides the collect rate. format: Freq / 1024
-    AD5933_Set_Freq_Start(200000);//100Khz, 100K/1024 = 100Hz, data update rate is 100Hz!!!!!!
-    AD5933_Set_Freq_Add(1);//设置频率增量为1
-    AD5933_Set_Freq_Num(10);//设置增量数，也就是扫描中的频率点数
+    AD5933_Set_Freq_Start(20000);//100Khz, 100K/1024 = 100Hz, data update rate is 100Hz!!!!!!
+    AD5933_Set_Freq_Add(100);//设置频率增量为1
+    AD5933_Set_Freq_Num(500);//设置增量数，也就是扫描中的频率点数
 
     AD5933_Set_Mode( AD5933_Standby, AD5933_OUTPUT_2V, AD5933_Gain_1, AD5933_IN_MCLK, AD5933_NReset );
     AD5933_Set_Mode_Rst();
